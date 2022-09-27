@@ -1,4 +1,6 @@
 const Users = require("../models/user");
+const bcrypt = require("bcryptjs");
+const { async } = require("rxjs");
 
 const getusers = async (req, res) => {
   try {
@@ -21,8 +23,6 @@ const getuser = async (req, res) => {
 
 // const register = async (req, res) => {
 
- 
-
 //   try {
 //     const user = new Users({
 //       name: req.body.name,
@@ -30,9 +30,7 @@ const getuser = async (req, res) => {
 //       password: req.body.password,
 //       profilePhoto: req.body.profilePhoto,
 //     });
-  
 
-  
 //     const olduser = await Users.findOne({ email: req.body.email });
 //     if (olduser) {
 //       return res.status(409).send("user email already exist");
@@ -45,37 +43,47 @@ const getuser = async (req, res) => {
 //   }
 // };
 
-
-const register = async (req,res)=>{
-  try{
-    const {name,email,password,profilePhoto}=req.body;
+const register = async (req, res) => {
+  try {
+    const { name, email, password, profilePhoto } = req.body;
 
     //validate
-    if(!(name && email && password && profilePhoto)){
+    if (!(name && email && password && profilePhoto)) {
       res.status(400).send("all inputs is required");
-
     }
-    const olduser =await Users.findOne({email});
-    if(olduser){
-      return res.status(409).send("User Already Exist")
+    const olduser = await Users.findOne({ email });
+    if (olduser) {
+      return res.status(409).send("User Already Exist");
     }
 
-    encryptedPassword =await bcrypt.hash(password, 10);
-
+    encryptedPassword = await bcrypt.hash(password, 10);
 
     const user = await Users.create({
       name,
-      email:email.toLoweCase(),
-      password:encryptedPassword,
-      profilePhoto
+      email:email.toLowerCase(),
+      password: encryptedPassword,
+      profilePhoto,
     });
     res.status(201).json(user);
+  } catch (err) {
+    console.log(err);
+  }
+};
+ const login = async (req,res)=>{
+  try{
+    const {email,password}=req.body;
+    //validate
+    if(!(email && password)){
+      res.status(400).send("All inputs is required");
+    }
+    const user = await Users.findOne({email});
+    if(user && (await bcrypt.compare(password,user.password))){
+      res.status(200).json(user);
+    }
+    res.status(400).send("Invalid Credentials");
   }catch (err) {
     console.log(err);
-}
-}
-
-
+ }};
 const userupdate = async (req, res) => {
   try {
     const user = {
@@ -109,6 +117,7 @@ module.exports = {
   getusers,
   getuser,
   register,
+  login,
   userupdate,
   deleteuser,
 };
